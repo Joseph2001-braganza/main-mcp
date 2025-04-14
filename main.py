@@ -1,4 +1,4 @@
-# main.py
+import uuid
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 import asyncio
@@ -15,17 +15,21 @@ async def root():
 async def status():
     return {"status": "All systems operational 🚀"}
 
-# Properly formatted SSE event generator
+# Correct JSON-RPC 2.0 SSE generator
 async def event_generator() -> AsyncGenerator[str, None]:
     while True:
-        event_data = json.dumps({
-            "status": "heartbeat",
-            "timestamp": asyncio.get_event_loop().time()
-        })
-        yield f"data: {event_data}\n\n"
-        await asyncio.sleep(1)
+        event = {
+            "jsonrpc": "2.0",
+            "id": str(uuid.uuid4()),
+            "method": "tool/update",
+            "params": {
+                "tools": [],
+                "resources": []
+            }
+        }
+        yield f"data: {json.dumps(event)}\n\n"
+        await asyncio.sleep(5)
 
-# SSE endpoint compliant with Cursor's MCP format
 @app.get("/sse")
 async def sse():
     return StreamingResponse(
