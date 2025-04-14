@@ -1,5 +1,8 @@
 # main.py
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
+from fastapi.responses import StreamingResponse
+import asyncio
+from typing import AsyncGenerator
 
 app = FastAPI()
 
@@ -13,4 +16,21 @@ async def root():
 async def status():
     # Example endpoint to simulate MCP actions/status
     return {"status": "All systems operational 🚀"}
+
+async def event_generator() -> AsyncGenerator[str, None]:
+    while True:
+        # Simulate some data
+        yield f"data: {{'status': 'heartbeat', 'timestamp': {asyncio.get_event_loop().time()}}}\n\n"
+        await asyncio.sleep(1)
+
+@app.get("/events")
+async def events():
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+        }
+    )
 
