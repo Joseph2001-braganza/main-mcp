@@ -1,7 +1,8 @@
 # main.py
-from fastapi import FastAPI, Response
+from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 import asyncio
+import json
 from typing import AsyncGenerator
 
 app = FastAPI()
@@ -10,21 +11,23 @@ app = FastAPI()
 async def root():
     return {"message": "MCP Server is running!"}
 
-# This is to test the server that is working fine
-# This then returns a message to the user !
 @app.get("/status")
 async def status():
-    # Example endpoint to simulate MCP actions/status
     return {"status": "All systems operational 🚀"}
 
+# Properly formatted SSE event generator
 async def event_generator() -> AsyncGenerator[str, None]:
     while True:
-        # Simulate some data
-        yield f"data: {{'status': 'heartbeat', 'timestamp': {asyncio.get_event_loop().time()}}}\n\n"
+        event_data = json.dumps({
+            "status": "heartbeat",
+            "timestamp": asyncio.get_event_loop().time()
+        })
+        yield f"data: {event_data}\n\n"
         await asyncio.sleep(1)
 
-@app.get("/events")
-async def events():
+# SSE endpoint compliant with Cursor's MCP format
+@app.get("/sse")
+async def sse():
     return StreamingResponse(
         event_generator(),
         media_type="text/event-stream",
@@ -33,4 +36,3 @@ async def events():
             "Connection": "keep-alive",
         }
     )
-
